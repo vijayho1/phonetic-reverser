@@ -1,0 +1,35 @@
+Phonetic Reverser - Run Instructions
+===================================
+
+1. Open a terminal in the project folder:
+   cd "C:\Users\Vijay\Desktop\phonetic_reverser\phonetic-reverser"
+
+2. Start the Python backend:
+   "C:\Users\Vijay\Desktop\phonetic_reverser\.venv\Scripts\python.exe" app.py
+
+   This runs the Flask API on:
+   http://localhost:5000
+
+3. In a second terminal, install frontend packages if needed:
+   npm install
+
+4. Start the web app:
+   npm run dev -- --host 0.0.0.0
+
+   This runs the Vite app on:
+   http://localhost:5173
+
+5. Open the browser and visit:
+   http://localhost:5173/
+
+6. If the backend fails due to Python dependency issues, repair the environment with:
+   "C:\Users\Vijay\Desktop\phonetic_reverser\.venv\Scripts\python.exe" -m pip install --upgrade --force-reinstall numpy
+   "C:\Users\Vijay\Desktop\phonetic_reverser\.venv\Scripts\python.exe" -m pip install --force-reinstall regex
+
+7. If needed, reinstall backend dependencies from the project folder:
+   "C:\Users\Vijay\Desktop\phonetic_reverser\.venv\Scripts\python.exe" -m pip install -r requirements.txt
+
+Notes:
+- The backend is the Flask API for text and audio processing.
+- The frontend is the React/Vite interface for the app.
+- If you want to stop the servers, press Ctrl+C in each terminal.

@@ -19,12 +19,19 @@ A web-based phonetic reversal tool that converts text or speech into phonemes an
 
 ---
 
+## Baby step
+
+If you want to see how the things work under the hood please go ahead and run `phonetics.py` in the terminal with 
+`python phonetics.py`
+
+---
+
 ## Setup
 
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/vijayho1/phonetic-reverser.git
 cd phonetic-reverser
 ```
 
@@ -35,8 +42,7 @@ Make sure you have **Node.js 18+** installed.
 ```bash
 npm install
 ```
-
-The project uses the dependencies defined in `package.json`, so `npm install` will install everything required.
+Has `package.json` just `npm install` will do 
 
 ### 3. Start the development server
 
@@ -49,7 +55,7 @@ Vite will start the frontend and show the local URL in the terminal.
 Usually:
 
 ```text
-http://localhost:5173
+http://localhost:something
 ```
 
 Open that URL in your browser.

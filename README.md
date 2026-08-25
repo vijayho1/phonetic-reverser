@@ -1,32 +1,249 @@
-# React + TypeScript + Vite
+# Phonetic Reverser Frontend — Setup & Integration Guide
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## Quick Start
 
-Currently, two official plugins are available:
+```bash
+cd phonetic-reverser
+npm install
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The app will run at `http://localhost:5173` (or whatever port Vite assigns).
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project Structure
 
-## Expanding the Oxlint configuration
+```
+src/
+├── components/
+│   ├── TextReverser.tsx       # Text input & phoneme reversal
+│   ├── VoiceReverser.tsx      # Voice recording & speech-to-text
+│   └── VoiceExperiment.tsx    # Pure audio reversal experiment
+├── hooks/
+│   └── useAudioRecorder.ts    # Audio recording logic
+├── services/
+│   └── phoneticApi.ts         # Backend abstraction layer ← INTEGRATE HERE
+├── App.tsx                    # Main app shell
+├── App.css                    # All styling (dark theme + responsive)
+└── main.tsx                   # Entry point
+```
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+---
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+## Backend Integration
+
+**All backend communication lives in `src/services/phoneticApi.ts`.**
+
+This file is designed to be swapped out with real API calls to your Python backend.
+
+### Step 1: Update API Base URL
+
+In `phoneticApi.ts`, uncomment the real implementation and set your backend URL:
+
+```typescript
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+```
+
+### Step 2: Replace Mock Functions
+
+Three functions need real implementation:
+
+#### `reverseText(text: string)`
+
+```typescript
+export async function reverseText(text: string): Promise<ReverseResult> {
+  const response = await fetch(`${API_BASE}/api/reverse`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  
+  if (!response.ok) throw new Error('Backend error');
+  return response.json();
 }
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+**Expected response:**
+```json
+{
+  "originalText": "hello",
+  "reversedPhonemes": "OW1 L AH0 HH"
+}
+```
+
+#### `reverseVoice(text: string, audioBlob?: Blob)`
+
+```typescript
+export async function reverseVoice(
+  text: string,
+  audioBlob?: Blob
+): Promise<VoiceReverseResult> {
+  const formData = new FormData();
+  formData.append('text', text);
+  if (audioBlob) formData.append('audio', audioBlob, 'recording.wav');
+
+  const response = await fetch(`${API_BASE}/api/reverse-voice`, {
+    method: 'POST',
+    body: formData,
+  });
+  
+  return response.json();
+}
+```
+
+**Expected response:**
+```json
+{
+  "originalText": "hello",
+  "reversedPhonemes": "OW1 L AH0 HH",
+  "reversedAudioUrl": "..."
+}
+```
+
+The React service can also create local blob URLs for playback after the backend returns the reversed audio bytes.
+
+#### `reverseAudio(audioBlob: Blob)`
+
+```typescript
+export async function reverseAudio(audioBlob: Blob): Promise<Blob> {
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'recording.wav');
+
+  const response = await fetch(`${API_BASE}/api/reverse-audio`, {
+    method: 'POST',
+    body: formData,
+  });
+  
+  return response.blob();
+}
+```
+
+**Returns:** Binary audio blob (reversed audio file)
+
+---
+
+## Environment Variables
+
+Create a `.env.local` file:
+
+```
+VITE_API_URL=http://localhost:5000
+```
+
+Or if deployed:
+
+```
+VITE_API_URL=https://your-backend-domain.com
+```
+
+---
+
+## Backend Contract
+
+Your Python backend should expose these endpoints:
+
+### POST `/api/reverse`
+- **Request:** `{ "text": "hello" }`
+- **Response:** `{ "originalText": "hello", "reversedPhonemes": "OW1 L AH0 HH" }`
+
+### POST `/api/reverse-voice`
+- **Request:** FormData with `text` and optionally `audio`
+- **Response:** `{ "originalText": "hello", "reversedPhonemes": "...", "reversedAudioUrl": "..." }`
+
+### POST `/api/reverse-audio`
+- **Request:** FormData with `audio` (binary)
+- **Response:** Binary audio blob (reversed audio)
+
+### CORS
+
+If frontend and backend are on different domains, enable CORS in your Python backend:
+
+```python
+from flask_cors import CORS
+
+CORS(app, origins=['http://localhost:5173', 'https://yourdomain.com'])
+```
+
+Or configure it in `phoneticApi.ts` with a proxy.
+
+---
+
+## Development Notes
+
+### Mocked vs Real
+
+- **Currently:** All API calls return mock data so you can test the UI immediately
+- **To use real backend:** Replace the mock functions in `phoneticApi.ts` with fetch calls
+
+### Audio Handling
+
+- Recordings are stored in browser memory during the session
+- User can download reversed audio to their device
+- No permanent server storage by design (as per spec)
+
+### Speech-to-Text
+
+The Voice Mode currently returns mocked recognized text. To integrate real speech-to-text:
+
+1. Add a speech recognition service (Web Speech API, or call your backend)
+2. Update `VoiceReverser.tsx` to pass real recognized text to the API
+
+Example using Web Speech API:
+
+```typescript
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.onresult = (e) => {
+  const text = e.results[0][0].transcript;
+  // Send text to backend
+};
+```
+
+---
+
+## Styling & Design
+
+- **Theme:** Dark mode with cyan/teal accents
+- **Typography:** System fonts with size scale
+- **Animations:** Smooth CSS transitions (respects `prefers-reduced-motion`)
+- **Responsive:** Mobile-first, works at 320px+ widths
+
+To customize colors, edit `:root` variables in `App.css`:
+
+```css
+:root {
+  --bg-dark: #0a0e27;
+  --accent-cyan: #00d9ff;
+  /* ... */
+}
+```
+
+---
+
+## Build & Deploy
+
+### Development
+```bash
+npm run dev
+```
+
+### Production Build
+```bash
+npm run build
+```
+
+Output goes to `dist/` folder.
+
+### Deploy to Vercel (recommended)
+```bash
+npm i -g vercel
+vercel
+```
+
+### Deploy to Netlify
+```bash
+npm run build
+# Drag dist/ to Netlify, or use netlify-cli
+```
+
+---

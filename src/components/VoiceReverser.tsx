@@ -8,6 +8,7 @@ export default function VoiceReverser() {
   const [recognizedText, setRecognizedText] = useState('');
   const [result, setResult] = useState<VoiceReverseResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isWaking, setIsWaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'recording' | 'recognizing' | 'done'>('recording');
 
@@ -15,6 +16,7 @@ export default function VoiceReverser() {
     setRecognizedText('');
     setResult(null);
     setError(null);
+    setIsWaking(false);
     setStep('recording');
 
     try {
@@ -29,6 +31,8 @@ export default function VoiceReverser() {
     const audioBlob = await recorder.stopRecording();
     setStep('recognizing');
     setLoading(true);
+    setIsWaking(false);
+    const wakeTimer = setTimeout(() => setIsWaking(true), 2500);
 
     try {
       if (!audioBlob) {
@@ -52,6 +56,8 @@ export default function VoiceReverser() {
       console.error(err);
       setStep('recording');
     } finally {
+      clearTimeout(wakeTimer);
+      setIsWaking(false);
       setLoading(false);
     }
   };
@@ -100,6 +106,12 @@ export default function VoiceReverser() {
         <div className="processing-state">
           <div className="spinner" />
           <p>Processing your voice...</p>
+          {isWaking && (
+            <div className="waking-tip" style={{ marginTop: '1rem' }}>
+              <span className="wake-spinner-sm" />
+              <span>Waking up server from idle... please wait about a minute on the first request.</span>
+            </div>
+          )}
         </div>
       )}
 

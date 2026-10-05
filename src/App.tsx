@@ -3,6 +3,7 @@ import './App.css';
 import TextReverser from './components/TextReverser';
 import VoiceReverser from './components/VoiceReverser';
 import VoiceExperiment from './components/VoiceExperiment';
+import ServerWakeBanner from './components/ServerWakeBanner';
 
 type ActiveTab = 'text' | 'voice';
 
@@ -21,6 +22,8 @@ export default function App() {
 
       {/* Main Reverser */}
       <main className="main-content">
+        <ServerWakeBanner />
+
         <div className="reverser-container">
           {/* Tabs */}
           <div className="tabs">

@@ -20,6 +20,18 @@ export interface VoiceReverseResult {
 }
 
 /**
+ * Check if the backend server is awake and responding.
+ */
+export async function checkServerHealth(signal?: AbortSignal): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/health`, { signal });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Reverse text using the phonetic engine.
  * 
  * Backend endpoint: POST /api/reverse

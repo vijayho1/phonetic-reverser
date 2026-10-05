@@ -6,6 +6,7 @@ export default function TextReverser() {
   const [input, setInput] = useState('');
   const [result, setResult] = useState<ReverseResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isWaking, setIsWaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleReverse = async () => {
@@ -16,6 +17,8 @@ export default function TextReverser() {
 
     setLoading(true);
     setError(null);
+    setIsWaking(false);
+    const wakeTimer = setTimeout(() => setIsWaking(true), 2500);
 
     try {
       const response = await reverseText(input);
@@ -24,6 +27,8 @@ export default function TextReverser() {
       setError('Failed to reverse text. Please try again.');
       console.error(err);
     } finally {
+      clearTimeout(wakeTimer);
+      setIsWaking(false);
       setLoading(false);
     }
   };
@@ -71,6 +76,13 @@ export default function TextReverser() {
             </button>
           )}
         </div>
+
+        {isWaking && (
+          <div className="waking-tip">
+            <span className="wake-spinner-sm" />
+            <span>Waking up server from idle... please wait about a minute on the first request.</span>
+          </div>
+        )}
 
         {error && <div className="error-message">{error}</div>}
       </div>

@@ -6,26 +6,24 @@ from time import time
 import wave
 
 import cmudict
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, send_from_directory
 from flask_cors import CORS
 import speech_recognition as sr
 
 from phonetic_engine import process_sentence_stream, process_word
 
 
-app = Flask(__name__)
+DIST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist')
+app = Flask(__name__, static_folder=DIST_DIR if os.path.exists(DIST_DIR) else None)
 
-allowed_origins = [
-    origin.strip()
-    for origin in os.environ.get(
-        'CORS_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173',
-    ).split(',')
-    if origin.strip()
-]
+cors_origins_raw = os.environ.get('CORS_ORIGINS', '*').strip()
+if cors_origins_raw == '*':
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+else:
+    allowed_origins = [orig.strip() for orig in cors_origins_raw.split(',') if orig.strip()]
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
 app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_UPLOAD_BYTES', '5242880'))
-CORS(app, origins=allowed_origins)
 
 dictionary = cmudict.dict()
 recognizer = sr.Recognizer()
@@ -130,9 +128,20 @@ def _transcribe_audio_bytes(audio_bytes: bytes, filename: str | None, mimetype: 
             pass
 
 
-@app.get('/')
-def health_check():
+@app.get('/health')
+def health():
     return jsonify({'status': 'ok'})
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if os.path.exists(DIST_DIR):
+        file_path = os.path.join(DIST_DIR, path)
+        if path and os.path.exists(file_path):
+            return send_from_directory(DIST_DIR, path)
+        return send_from_directory(DIST_DIR, 'index.html')
+    return jsonify({'status': 'ok', 'message': 'API backend is running. Frontend dist not found.'})
 
 
 @app.post('/api/reverse')

@@ -29,8 +29,8 @@ COPY --from=frontend-builder /app/dist ./dist
 # Copy application source
 COPY . .
 
-ENV PORT=8000
-EXPOSE 8000
+ENV PORT=7860
+EXPOSE 7860
 
-# Start production WSGI server
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 app:app"]
+# Start production WSGI server (adapts to $PORT if provided by host, otherwise 7860)
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-7860} --workers 2 --timeout 120 app:app"]
